@@ -85,15 +85,6 @@ import keras
 from keras.models import Sequential
 from keras.layers import Dense
 
-# use this to prevent overfitting
-# overfitting is when the model trains too much on the training set
-# causing it to cause some bias in test sets
-# overfitting can be detected when there is unusually high variance when using cross validation
-# because when it's overfitted, correlations learnt in training set does not apply to test set
-# to prevent overfitting we need to use the dropout regularization
-# we need to apply dropout disables some connection with the neurons in the ANN
-from keras.layers import Dropout
-
 # now we initialize the ANN
 # two ways to initialize: by defining the sequence of layers
 # or defining a graph
@@ -116,16 +107,10 @@ classifier = Sequential()
 # because no layers has been initialized yet
 # the following one no need
 classifier.add(Dense(units = 6, kernel_initializer = 'uniform', activation = 'relu', input_dim = 11))
-classifier.add(Dropout(p = 0.1))
-# add drop out, p is the fraction of neurons we want to drop at EACH iteration
-# IF you detect overfitting, try to set 0.1 first for p, then increase 0.2, 0.3, 0.4
-# 0.5 is too much and will cause underfitting
 
 # adding the second hidden layer
 # no need to input no of input layers since it's already defined
 classifier.add(Dense(units = 6, kernel_initializer = 'uniform', activation = 'relu'))
-classifier.add(Dropout(p = 0.1))
-# just add the drop out after setting the layers
 
 # adding the output layer
 # since it's a categorical data, we only need to create 1 output layer
@@ -193,10 +178,6 @@ cm = confusion_matrix(y_test, y_pred)
 # estimated salary: 50000
 # refer to line 157 to 162 for answers and execute them
 
-
-# =============================================================================
-
-
 # at this point, we need to evaluate the model and retrain it
 # this is because there is a variance problem, where different test sets
 # will produce different accuracies, this is not ideal
@@ -206,95 +187,10 @@ cm = confusion_matrix(y_test, y_pred)
 # we'll get a much better idea of the accuracy by taking the average and standard dev of those
 # 10 iterations.
 
-# implementing k-Fold cross-validation
-# need to combine sklearn and keras, use keras wrapper to apply the kfcv to the keras model
-# import keras wrapper and cross_val function
-from keras.wrappers.scikit_learn import KerasClassifier
-from sklearn.model_selection import cross_val_score
-from keras.models import Sequential
-from keras.layers import Dense
-
-# build the architecture of the ann using a function
-# repeat steps for building ANN
-def build_classifier ():
-    classifier = Sequential()
-    classifier.add(Dense(units = 6, kernel_initializer = 'uniform', activation = 'relu', input_dim = 11))
-    classifier.add(Dense(units = 6, kernel_initializer = 'uniform', activation = 'relu'))
-    classifier.add(Dense(units = 1, kernel_initializer = 'uniform', activation = 'sigmoid'))
-    classifier.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
-    return classifier
-
-# next step is we need to wrap the whole thing together
-# instead of fitting it with the batch_size and epochs only, we will use the k fold cross val
-# on 10 different folds, the only thing that is different is the training part
-classifier = KerasClassifier(build_fn = build_classifier, batch_size = 10, epochs = 100)
-
-# cross_val_score function then will get the 10 accuracies of the 10 folds
-# estimator is the object to use to fit the data: X_train y_train
-# cv is the number of folds, usually put 10, check if low bias low variance
-# n_jobs is no of CPU used, -1 uses parallel computing to run at the same time
-accuracies = cross_val_score(estimator = classifier, X = X_train, y = y_train, cv = 10, n_jobs = -1)
-
-# then we take the mean of the accuracies as well as the standard deviation
-mean = accuracies.mean()
-variance = accuracies.std()
-
-
-# =============================================================================
 
 
 
-# after this we can tune the ANN
-# parameters can be fixed or can vary
-# hyper-parameters are those parameters that stay fixed for example batch_size,
-# epochs, optimizer, no of neurons in the layer
-# we need to train with fixed values
-# however, we need to tune these hyper-parameters to find the most optimized values
-# of these hyper-parameters
-from keras.wrappers.scikit_learn import KerasClassifier
-from sklearn.model_selection import GridSearchCV
-from keras.models import Sequential
-from keras.layers import Dense
 
-# build the architecture of the ann using a function
-# repeat steps for building ANN
-def build_classifier(optimizer):
-    classifier = Sequential()
-    classifier.add(Dense(units = 6, kernel_initializer = 'uniform', activation = 'relu', input_dim = 11))
-    classifier.add(Dense(units = 6, kernel_initializer = 'uniform', activation = 'relu'))
-    classifier.add(Dense(units = 1, kernel_initializer = 'uniform', activation = 'sigmoid'))
-    # optimizer is going to be replaced
-    classifier.compile(optimizer = optimizer, loss = 'binary_crossentropy', metrics = ['accuracy'])
-    return classifier
 
-# since batch_size and epochs are tuned, we need to remove the arguments from the KerasClassifier
-classifier = KerasClassifier(build_fn = build_classifier)
-
-# create a dictionary with the hyper-parameters
-# it will try with all the values and return the best values
-# to test for the parameters inside the Dense function, we need to create parameter
-# in the build_classifier function
-# rmsprop is also good for gradient descent
-parameters = {'batch_size': [25, 32],
-              'epochs': [100, 500],
-              'optimizer': ['adam', 'rmsprop']}
-
-# then we execute the cross validation function with the parameters
-# scoring metric is to choose what category we use to pick the relevant params
-grid_search = GridSearchCV(estimator = classifier, 
-                           param_grid = parameters, 
-                           scoring = 'accuracy',
-                           cv = 10)
-
-# then we fit the grid_search into out training set
-grid_search = grid_search.fit(X_train, y_train)
-
-# then we need to find the best selection and the best accuracy
-# use the attribute from the GridSearchCV class
-best_parameters = grid_search.best_params_
-best_accuracy = grid_search.best_score_
-
-# then we wait lol, cos this will take bloody long knnccb
-# in the end you will get a better result
 
 
