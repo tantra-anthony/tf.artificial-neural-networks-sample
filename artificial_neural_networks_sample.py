@@ -193,6 +193,9 @@ cm = confusion_matrix(y_test, y_pred)
 # estimated salary: 50000
 # refer to line 157 to 162 for answers and execute them
 
+# saving a model
+# classifier.save('model1.h5')
+
 
 # =============================================================================
 
